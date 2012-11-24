@@ -3,4 +3,17 @@ TCP key value server
  + Server responds with the right 'value' for a given 'key'
  + Server stores the right 'value' with the input 'key' (probably store it as json?)
  - Server can delete data for a key
- - Follow js syntax if possible
+
+How to use the kv server
+
+  1. Install it using
+      go get github.com/minhajuddin/gokv
+      go install github.com/minhajuddin/gokv
+  2. Run the server in one terminal:
+      gokv
+  3. From a different terminal query it like below
+      echo name | nc localhost 4000
+
+Test data for your ~/.gokv.json
+
+  {"foo":"This is cool","name":"Khaja Minhajuddin","tmp":"Dew"}

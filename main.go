@@ -1,32 +1,32 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"net"
 	"io"
+	"io/ioutil"
+	"net"
 	"os"
+	"path"
 	"strings"
-	"time"
+	_ "time"
 )
 
 const bufsize = 1024
 
-//TODO: should make this persistent
-var kv = map[string]interface{}{
-	"name" : "Khaja Minhajuddin",
-	"blog" : "http://minhajuddin.com",
-	"cpa" : "goserve .",
-}
+var kvFile = path.Join(os.Getenv("HOME"), ".gokv.json")
 
-func panicIfErr(e error){
+var kv map[string]interface{}
+
+func panicIfErr(e error) {
 	if e != nil {
 		panic(e)
 	}
 }
 
 func handle(c io.ReadWriteCloser) {
-	defer func(){
-		<-time.After(3* time.Second)
+	defer func() {
+		//<-time.After(3* time.Second)
 		println("closed")
 		c.Close()
 	}()
@@ -42,7 +42,15 @@ func handle(c io.ReadWriteCloser) {
 	fmt.Fprintln(c, "<NULL>")
 }
 
-func main(){
+func loadKv() {
+	data, err := ioutil.ReadFile(kvFile)
+	panicIfErr(err)
+	panicIfErr(json.Unmarshal(data, &kv))
+}
+
+func main() {
+	loadKv()
+	//defer persistKv()
 	fmt.Println("starting server on localhost 4000")
 	l, err := net.Listen("tcp", ":4000")
 	panicIfErr(err)

@@ -1,6 +1,6 @@
 TCP key value server
  + Server responds to any key with a text 'success'
  + Server responds with the right 'value' for a given 'key'
- - Server stores the right 'value' with the input 'key'
+ - Server stores the right 'value' with the input 'key' (probably store it as json?)
  - Server can delete data for a key
  - Follow js syntax if possible

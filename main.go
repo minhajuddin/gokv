@@ -4,8 +4,19 @@ import (
 	"fmt"
 	"net"
 	"io"
+	"os"
+	"strings"
 	"time"
 )
+
+const bufsize = 1024
+
+//TODO: should make this persistent
+var kv = map[string]interface{}{
+	"name" : "Khaja Minhajuddin",
+	"blog" : "http://minhajuddin.com",
+	"cpa" : "goserve .",
+}
 
 func panicIfErr(e error){
 	if e != nil {
@@ -14,9 +25,21 @@ func panicIfErr(e error){
 }
 
 func handle(c io.ReadWriteCloser) {
-	fmt.Fprintln(c, "This is awesome")
-	<-time.After(time.Second * 5)
-	c.Close()
+	defer func(){
+		<-time.After(3* time.Second)
+		println("closed")
+		c.Close()
+	}()
+	buf := make([]byte, bufsize)
+	//io.ReadFull(c, buf)
+	nr, _ := io.ReadFull(c, buf)
+	key := strings.Trim(string(buf[:nr]), "\n\r")
+	if v, ok := kv[key]; ok {
+		fmt.Fprintln(c, v)
+		return
+	}
+	fmt.Fprintf(os.Stderr, "key for '%s' not found\n", key)
+	fmt.Fprintln(c, "<NULL>")
 }
 
 func main(){

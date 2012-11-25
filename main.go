@@ -1,9 +1,9 @@
-//gokv is a basic key value stored which is persisted to disk in a json serialized form
+//gokv is a basic key value store which is persisted to disk in a json serialized form
 //it supports 
-//	+ storing a value for a key
-//	+ retreiving a value for a key
-//	- deleting a key value pair
-//	- retreiving keys with a given prefix
+//	+ storing a key value pair
+//	+ retreiving the value for a given key
+//	+ deleting a key value pair
+//	+ retreiving a list of keys with a given prefix
 
 package main
 

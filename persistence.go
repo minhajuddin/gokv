@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"runtime"
+	"strings"
 )
 
 //loads the key value data from the persistence file
@@ -41,4 +42,24 @@ func persistKv() error {
 		return err
 	}
 	return ioutil.WriteFile(kvFile, bytes, 0600)
+}
+
+//returns keys starting with this prefix
+func listKeys(prefix string) []string {
+	keys := make([]string, 0, len(kv))
+	mutex.Lock()
+	for k := range kv {
+		if strings.HasPrefix(k, prefix) {
+			keys = append(keys)
+		}
+	}
+	mutex.Unlock()
+	return keys
+}
+
+//deletes a key from the kv store
+func deleteKey(key string) {
+	mutex.Lock()
+	delete(kv, key)
+	mutex.Unlock()
 }

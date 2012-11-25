@@ -7,7 +7,6 @@ import (
 	"log"
 	"net"
 	"regexp"
-	"strings"
 )
 
 //TODO: write a few tests to make sure that cmd parsing is fine
@@ -69,18 +68,12 @@ func (self *command) Exec(w bufio.Writer) {
 	case "SET":
 		setValue(self.key, self.value)
 	case "LIST":
-		mutex.Lock()
-		for k := range kv {
-			if strings.HasPrefix(k, self.key) {
-				w.WriteString(k + "\n")
-			}
+		for _, k := range listKeys(self.key) {
+			w.WriteString(k + "\n")
 		}
-		mutex.Unlock()
 		w.Flush()
 	case "DELETE":
-		mutex.Lock()
-		delete(kv, self.key)
-		mutex.Unlock()
+		deleteKey(self.key)
 	}
 }
 

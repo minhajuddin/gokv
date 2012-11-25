@@ -17,3 +17,19 @@ How to use the kv server
 Test data for your ~/.gokv.json
 
   {"foo":"This is cool","name":"Khaja Minhajuddin","tmp":"Dew"}
+
+# Protocol
+
+ 1. Allow storing of data using an input stream like below
+    'STORE key value'
+    The 'key' should be a sequence of letters without a space. And the value can be any string without a new line/carriage return
+ 2. Allow getting of a value for a key like below
+    'KEY key'
+    If the key is not found the returned result will be a literal string '<NULL>'
+ 3. Allow getting of a list of keys with a prefix like below
+    'KEYS prefix'
+    The prefix can be empty, when it is empty all the keys should be listed, one for each line
+ 4. Allow deleting of keys like below
+    'DELETE key'
+
+- - -

@@ -10,14 +10,20 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"runtime"
 	"strings"
+	"sync"
 	"syscall"
 )
 
 const bufsize = 1024
 
-//file where the serialized json is persisted
-var kvFile = path.Join(os.Getenv("HOME"), ".gokv.json")
+var (
+	//file where the serialized json is persisted
+	kvFile = path.Join(os.Getenv("HOME"), ".gokv.json")
+	//mutex used to lock/unlock access to the kv store
+	mutex = &sync.Mutex{}
+)
 
 //in memory map of key value store
 var kv map[string]interface{}
@@ -44,10 +50,10 @@ func handle(c io.ReadWriteCloser) {
 	idx := strings.Index(key, "\n")
 	//if it has a newline, the first line is the key
 	if idx > -1 {
-		kv[key[:idx]] = strings.Trim(key[idx:], "\n")
+		setValue(key[:idx], strings.Trim(key[idx:], "\n"))
 		return
 	}
-	if v, ok := kv[key]; ok {
+	if v, ok := getValue(key); ok {
 		fmt.Fprintln(c, v)
 		return
 	}
@@ -63,10 +69,28 @@ func loadKv() {
 	panicIfErr(json.Unmarshal(data, &kv))
 }
 
+//read writes are done after locking the current go routine
+func getValue(key string) (value interface{}, ok bool) {
+	mutex.Lock()
+	defer mutex.Unlock()
+	value, ok = kv[key]
+	runtime.Gosched()
+	return
+}
+
+func setValue(key string, value interface{}) {
+	mutex.Lock()
+	defer mutex.Unlock()
+	kv[key] = value
+	runtime.Gosched()
+}
+
 //persists the data to the persistence file when the
 //server shuts down
 func persistKv() {
+	mutex.Lock()
 	bytes, err := json.Marshal(kv)
+	mutex.Unlock()
 	if err != nil {
 		log.Println(err)
 	}

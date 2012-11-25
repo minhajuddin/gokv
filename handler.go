@@ -27,6 +27,13 @@ func handle(c net.Conn) {
 	w := bufio.NewWriter(c)
 	for {
 		rawline, err := r.ReadString('\n')
+
+		//connection has probably closed
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
 		cmd, err := parseCommand(rawline)
 
 		if err != nil {

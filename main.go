@@ -1,3 +1,10 @@
+//gokv is a basic key value stored which is persisted to disk in a json serialized form
+//it supports 
+//	+ storing a value for a key
+//	+ retreiving a value for a key
+//	- deleting a key value pair
+//	- retreiving keys with a given prefix
+
 package main
 
 import (
@@ -21,17 +28,18 @@ const bufsize = 1024
 var (
 	//file where the serialized json is persisted
 	kvFile = path.Join(os.Getenv("HOME"), ".gokv.json")
+
 	//mutex used to lock/unlock access to the kv store
 	mutex = &sync.Mutex{}
+	//in-memory key value store
+	kv map[string]interface{}
 )
 
-//in memory map of key value store
-var kv map[string]interface{}
-
 //helper method
+//TODO: remove this, and handle errors where they occur
 func panicIfErr(e error) {
 	if e != nil {
-		log.Panic(e)
+		log.Fatalln(e)
 	}
 }
 
@@ -41,8 +49,8 @@ func panicIfErr(e error) {
 //if it is more than one line, it assumes that the 
 //first line is a key and the rest is the value
 //it tries to store the data in this scenario
-func handle(c io.ReadWriteCloser) {
-	defer log.Println("connection closed")
+func handle(c net.Conn) {
+	defer log.Println("connection closed for ", c.RemoteAddr())
 	defer c.Close()
 	buf := make([]byte, bufsize)
 	nr, _ := io.ReadFull(c, buf)
@@ -57,16 +65,18 @@ func handle(c io.ReadWriteCloser) {
 		fmt.Fprintln(c, v)
 		return
 	}
-	log.Printf("key for '%s' not found\n", key)
+	log.Printf("key for '%s' not found for '%v'\n", key, c.RemoteAddr())
 	fmt.Fprintln(c, "<NULL>")
 }
 
 //loads the key value data from the persistence file
 //when the server is started
-func loadKv() {
+func loadKv() error {
 	data, err := ioutil.ReadFile(kvFile)
-	panicIfErr(err)
-	panicIfErr(json.Unmarshal(data, &kv))
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(data, &kv)
 }
 
 //read writes are done after locking the current go routine
@@ -74,7 +84,6 @@ func getValue(key string) (value interface{}, ok bool) {
 	mutex.Lock()
 	defer mutex.Unlock()
 	value, ok = kv[key]
-	runtime.Gosched()
 	return
 }
 
@@ -87,18 +96,17 @@ func setValue(key string, value interface{}) {
 
 //persists the data to the persistence file when the
 //server shuts down
-func persistKv() {
+func persistKv() error {
 	mutex.Lock()
 	bytes, err := json.Marshal(kv)
 	mutex.Unlock()
 	if err != nil {
-		log.Println(err)
+		return err
 	}
-	ioutil.WriteFile(kvFile, bytes, 0600)
-	log.Println("all key values persisted")
+	return ioutil.WriteFile(kvFile, bytes, 0600)
 }
 
-func handleSysSignals(l *net.Listener) {
+func handleSysSignals(l net.Listener) {
 	//signal handling
 	//this code allows us to handle the SIGINT and SIGTERM signals
 	//gracefully, we persist the file before we shutdown 
@@ -108,23 +116,27 @@ func handleSysSignals(l *net.Listener) {
 	//wait for a SIGINT or SIGTERM signal on a 
 	//different thread
 	go func() {
-		log.Printf("received a %v\n", <-sigs)
+		//moved side effect out of the log
+		sig := <-sigs
+		log.Println("received a", sig)
 		//make sure that the listener is closed before graceful exit
-		(*l).Close()
+		l.Close()
 	}()
 }
 
 func main() {
 	//load persistence file 
-	loadKv()
-	//save persistence file
-	defer persistKv()
+	err := loadKv()
+
+	if err != nil {
+		log.Fatal("Failed to load kv persistence file", err)
+	}
 
 	log.Println("starting server on localhost 4000")
 	l, err := net.Listen("tcp", ":4000")
 	panicIfErr(err)
 
-	handleSysSignals(&l)
+	handleSysSignals(l)
 
 	for {
 		c, err := l.Accept()
@@ -134,5 +146,11 @@ func main() {
 		}
 		log.Println("accepted connection")
 		go handle(c)
+	}
+	//save persistence file
+	err = persistKv()
+
+	if err != nil {
+		log.Fatal("Failed to persist kv file", err)
 	}
 }

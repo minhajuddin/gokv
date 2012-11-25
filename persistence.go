@@ -6,7 +6,6 @@ import (
 	"runtime"
 )
 
-
 //loads the key value data from the persistence file
 //when the server is started
 func loadKv() error {

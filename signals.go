@@ -8,7 +8,6 @@ import (
 	"syscall"
 )
 
-
 func handleSysSignals(l net.Listener) {
 	//signal handling
 	//this code allows us to handle the SIGINT and SIGTERM signals
@@ -26,5 +25,3 @@ func handleSysSignals(l net.Listener) {
 		l.Close()
 	}()
 }
-
-

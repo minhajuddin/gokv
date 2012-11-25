@@ -7,10 +7,11 @@ import (
 	"log"
 	"net"
 	"regexp"
+	"strings"
 )
 
 //TODO: write a few tests to make sure that cmd parsing is fine
-var cmdrx = regexp.MustCompile("(GET|STORE|LIST|DELETE) ([a-zA-Z0-9_-]+) ?(.*)")
+var cmdrx = regexp.MustCompile("(GET|SET|LIST|DELETE) ?([a-zA-Z0-9_-]+)? ?(.*)")
 
 //core handler
 //if the input is just one line it tries to get the
@@ -19,7 +20,6 @@ var cmdrx = regexp.MustCompile("(GET|STORE|LIST|DELETE) ([a-zA-Z0-9_-]+) ?(.*)")
 //first line is a key and the rest is the value
 //it tries to store the data in this scenario
 func handle(c net.Conn) {
-	//TODO: should be an infiinte loop?
 	remoteAddr := c.RemoteAddr()
 	defer log.Println("connection closed for ", remoteAddr)
 	defer c.Close()
@@ -45,23 +45,8 @@ func handle(c net.Conn) {
 		}
 
 		log.Println("processing", cmd, "from", remoteAddr)
+		//execute the command
 		cmd.Exec(*w)
-		////parse
-		//buf := make([]byte, bufsize)
-		//nr, _ := io.ReadFull(c, buf)
-		//key := strings.Trim(string(buf[:nr]), "\n")
-		//idx := strings.Index(key, "\n")
-		////if it has a newline, the first line is the key
-		//if idx > -1 {
-		//setValue(key[:idx], strings.Trim(key[idx:], "\n"))
-		//return
-		//}
-		//if v, ok := getValue(key); ok {
-		//fmt.Fprintln(c, v)
-		//return
-		//}
-		//log.Printf("key for '%s' not found for '%v'\n", key, remoteAddr)
-		//fmt.Fprintln(c, "<NULL>")
 	}
 }
 
@@ -81,6 +66,21 @@ func (self *command) Exec(w bufio.Writer) {
 		} else {
 			w.WriteString("<NULL>\n")
 		}
+	case "SET":
+		setValue(self.key, self.value)
+	case "LIST":
+		mutex.Lock()
+		for k := range kv {
+			if strings.HasPrefix(k, self.key) {
+				w.WriteString(k + "\n")
+			}
+		}
+		mutex.Unlock()
+		w.Flush()
+	case "DELETE":
+		mutex.Lock()
+		delete(kv, self.key)
+		mutex.Unlock()
 	}
 }
 

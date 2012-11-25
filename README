@@ -21,7 +21,7 @@ Test data for your ~/.gokv.json
 # Protocol
 
  1. Allow storing of data using an input stream like below
-    'STORE key value'
+    'SET key value'
     The 'key' should be a sequence of letters without a space. And the value can be any string without a new line/carriage return
     A key must match this regex [a-zA-Z0-9_-]+
  2. Allow getting of a value for a key like below

@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"io/ioutil"
-	"runtime"
 	"strings"
 )
 
@@ -29,15 +28,14 @@ func setValue(key string, value interface{}) {
 	mutex.Lock()
 	defer mutex.Unlock()
 	kv[key] = value
-	runtime.Gosched()
 }
 
 //persists the data to the persistence file when the
 //server shuts down
 func persistKv() error {
 	mutex.Lock()
+	defer mutex.Unlock()
 	bytes, err := json.Marshal(kv)
-	mutex.Unlock()
 	if err != nil {
 		return err
 	}

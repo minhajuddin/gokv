@@ -15,8 +15,6 @@ import (
 	"sync"
 )
 
-const bufsize = 1024
-
 var (
 	//file where the serialized json is persisted
 	kvFile = path.Join(os.Getenv("HOME"), ".gokv.json")
@@ -50,7 +48,7 @@ func main() {
 			log.Println("error in accept", err)
 			break
 		}
-		log.Println("accepted connection")
+		log.Println("accepted connection", c.RemoteAddr())
 		go handle(c)
 	}
 	//save persistence file

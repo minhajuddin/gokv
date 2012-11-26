@@ -33,7 +33,6 @@ func (self *command) Exec(w *bufio.Writer) {
 		for _, k := range listKeys(self.key) {
 			w.WriteString(k + "\n")
 		}
-		w.Flush()
 	case "DELETE":
 		deleteKey(self.key)
 	}
